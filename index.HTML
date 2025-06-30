@@ -1,0 +1,2394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BitKids: La Aventura Digital - Versión Gamificada</title>
+    <style>
+        /* --- ESTILOS GLOBALES Y PALETA DE COLORES --- */
+        :root {
+            /* --- COLORES BASE --- */
+            --color-fondo-oscuro: #1A1A2E;         /* Azul noche profundo / Morado oscuro (base principal, elegante) */
+            --color-fondo-secundario: #0A0A1F;     /* Azul noche aún más oscuro (para contrastes sutiles o elementos de fondo) */
+            --color-texto-claro: #E0E0E0;          /* Blanco grisáceo (texto principal, legible) */
+            --color-texto-secundario: #A0A0A0;     /* Gris medio (texto menos prominente, descripciones) */
+
+            /* --- COLORES DE ACENTO (NEÓN / BRILLO) --- */
+            --color-acento-neon-verde: #39FF14;    /* VERDE NEÓN (principal acento, para títulos, progreso, correcto) */
+            --color-acento-neon-azul: #00FFFF;     /* CIAN NEÓN (para brillos de hover, destacados, ciertos iconos) */
+            --color-acento-neon-rojo: #FF073A;     /* ROJO NEÓN (para errores, energía baja, incorrecto) */
+            --color-acento-neon-amarillo: #FFFF00; /* AMARILLO NEÓN (para energía media) */
+
+
+            /* --- COLORES DE BOTONES --- */
+            --color-boton-fondo-primario: #2A2A4A; /* Azul/Morado oscuro (fondo general de botones) */
+            --color-boton-borde: #50507A;          /* Borde sutil para botones */
+            --color-boton-texto: #E0E0E0;          /* Texto blanco/gris claro en botones */
+            --color-boton-hover-fondo: #3A3A6A;    /* Fondo de botón al pasar el mouse (un poco más claro) */
+            --color-boton-hover-texto: #FFFFFF;    /* Texto blanco puro al pasar el mouse */
+            --color-boton-hover-brillo: #00FFFF;   /* Resplandor Cian al pasar el mouse */
+
+            /* --- COLORES ESPECÍFICOS DEL TECLADO --- */
+            --color-teclado-key-background: #1F1F3D; /* Fondo de cada tecla (un poco más oscuro que el fondo principal) */
+            --color-teclado-key-border: #4A4A6A;    /* Borde de cada tecla */
+            --color-teclado-key-text: #E0E0E0;     /* Texto de cada tecla */
+            --color-teclado-key-hover: #2A2A4A;    /* Fondo de tecla al pasar el mouse */
+            --color-space-key: #2E8B57;            /* VERDE para el botón de ESPACIO (distinto, vital!) */
+            --color-shift-active: #FFA500;         /* NARANJA/ÁMBAR para el botón SHIFT activo (visualmente claro) */
+
+            /* --- COLORES DE FEEDBACK --- */
+            --color-feedback-correcto: #39FF14;
+            --color-feedback-incorrecto: #FF073A;
+
+            /* --- FONT SIZES (para la legibilidad en diferentes pantallas) --- */
+            /* clamp(mínimo, tamaño_viewport_relativo, máximo) */
+            --font-size-h1: clamp(2em, 5vw, 4em);
+            --font-size-h2: clamp(1.8em, 4vw, 3.5em);
+            --font-size-text-large: clamp(1.2em, 3vw, 2em);
+            --font-size-text-medium: clamp(1em, 2.5vw, 1.8em);
+            --font-size-text-small: clamp(0.8em, 2vw, 1.2em);
+            --font-size-button: clamp(0.9em, 2.5vw, 1.8em);
+            --font-size-keyboard-key: clamp(0.75em, 2.5vw, 2em);
+            /* Ajustado: Menor tamaño y brillo para el mensaje de feedback incorrecto */
+            --font-size-feedback-correct: clamp(3em, 15vw, 8em); /* Mantener grande para correcto y nivel completado */
+            --font-size-feedback-incorrect: clamp(1.5em, 5vw, 3em); /* Más pequeño para incorrecto */
+            --font-size-rules-text: clamp(0.8em, 2vw, 1.4em);
+            --font-size-delete-key: calc(var(--font-size-keyboard-key) * 0.7); /* 30% más pequeño */
+        }
+
+        /* --- ESTILOS GENERALES DEL BODY --- */
+        body {
+            margin: 0;
+            overflow: hidden; /* Evita scrollbars en el cuerpo */
+            font-family: 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: var(--color-fondo-oscuro); /* Fondo principal para todo el cuerpo */
+            color: var(--color-texto-claro); /* Color de texto por defecto */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Asegura que ocupe el alto completo de la ventana */
+            width: 100vw;  /* Asegura que ocupe el ancho completo de la ventana */
+        }
+
+        /* --- CLASE BASE PARA TODAS LAS VISTAS (PANTALLAS) --- */
+        .view {
+            width: 100vw;
+            height: 100vh;
+            position: absolute; /* Para que se superpongan */
+            top: 0;
+            left: 0;
+            display: flex; /* Se usa flex para el layout interno, but the opacity controls the visibility */
+            flex-direction: column; /* Most views stack their content */
+            justify-content: center; /* Center the view content vertically */
+            align-items: center;   /* Center the view content horizontally */
+            background-color: var(--color-fondo-oscuro); /* Default background for views without Matrix */
+
+            /* --- Transition for views --- */
+            transition: opacity 0.5s ease-in-out; /* Opacity transition */
+            opacity: 0; /* By default, all views are invisible */
+            pointer-events: none; /* Not interactable when invisible */
+        }
+
+        .view.active {
+            opacity: 1; /* The active view becomes visible */
+            pointer-events: auto; /* The active view becomes interactable */
+        }
+
+        /* --- GENERAL STYLES FOR CONTENT CONTAINERS --- */
+        .view-content-container {
+            background-color: rgba(10, 10, 31, 0.85); /* Semi-transparent background for the central content */
+            padding: clamp(10px, 3vw, 30px);
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+            max-width: 95%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+
+        h1, h2 {
+            color: var(--color-acento-neon-verde);
+            text-shadow: 0 0 8px rgba(57, 255, 20, 0.7);
+            margin-bottom: clamp(6px, 1.8vw, 12px);
+        }
+
+        h1 { font-size: var(--font-size-h1); }
+        h2 { font-size: var(--font-size-h2); }
+        p { font-size: var(--font-size-text-medium); color: var(--color-texto-claro); }
+
+        /* --- GLOBAL BUTTON STYLES --- */
+        .main-button, .secondary-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: var(--font-size-button);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            margin-top: clamp(8px, 2vw, 20px);
+            box-sizing: border-box;
+            width: auto;
+            min-width: 100px;
+        }
+
+        .main-button {
+            background-color: var(--color-boton-fondo-primario);
+            color: var(--color-boton-texto);
+            border: 2px solid var(--color-boton-borde);
+        }
+
+        .main-button:hover {
+            background-color: var(--color-boton-hover-fondo);
+            color: var(--color-boton-hover-texto);
+            box-shadow: 0 0 12px var(--color-boton-hover-brillo);
+            transform: translateY(-2px);
+        }
+
+        .secondary-button {
+            background-color: transparent;
+            color: var(--color-acento-neon-azul);
+            border: 2px solid var(--color-acento-neon-azul);
+        }
+
+        .secondary-button:hover {
+            background-color: var(--color-acento-neon-azul);
+            color: var(--color-boton-hover-texto);
+            box-shadow: 0 0 12px var(--color-acento-neon-azul);
+            transform: translateY(-2px);
+        }
+
+        /* --- PRELOAD SCREEN --- */
+        #preloadView {
+            background-color: var(--color-fondo-oscuro);
+        }
+        #preloadView .view-content-container {
+            background-color: rgba(10, 10, 31, 0.7);
+        }
+
+        .progress-bar-container {
+            width: 80%;
+            height: clamp(12px, 1.8vw, 18px);
+            background-color: var(--color-fondo-secundario);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 15px;
+            border: 1px solid var(--color-acento-neon-verde);
+            box-shadow: 0 0 8px rgba(57, 255, 20, 0.5);
+        }
+
+        #preloadProgressBar {
+            width: 0%;
+            height: 100%;
+            background-color: var(--color-acento-neon-verde);
+            border-radius: 5px;
+            transition: width 0.5s ease-out;
+        }
+
+        /* --- WELCOME SCREEN --- */
+        #welcomeView h1 {
+            margin-bottom: 15px;
+        }
+        #welcomeView p {
+            margin-bottom: 30px;
+        }
+        #welcomeView .welcome-buttons-container {
+            display: flex;
+            flex-direction: column; /* Stack buttons vertically */
+            gap: clamp(8px, 2vw, 15px); /* Space between buttons */
+            width: 100%; /* So buttons can be wide */
+            align-items: center; /* Center buttons if they don't take full width */
+        }
+        #welcomeView .welcome-buttons-container button {
+            width: 80%; /* Width for buttons within the container */
+            max-width: 300px; /* Max width to prevent excessive size */
+        }
+
+
+        /* --- PLAYER NAME SCREEN --- */
+        #playerNameView {
+            background-color: var(--color-fondo-oscuro);
+        }
+        #playerNameInput {
+            background-color: var(--color-fondo-secundario);
+            color: var(--color-acento-neon-verde);
+            border: 2px solid var(--color-acento-neon-verde);
+            padding: 10px 12px;
+            font-size: var(--font-size-text-large);
+            border-radius: 8px;
+            text-align: center;
+            width: 90%;
+            max-width: 350px;
+            margin-bottom: clamp(12px, 2.5vw, 20px);
+            box-shadow: inset 0 0 8px rgba(57, 255, 20, 0.3);
+            box-sizing: border-box;
+        }
+        #playerNameInput::placeholder {
+            color: var(--color-texto-secundario);
+            opacity: 0.7;
+        }
+
+        .virtual-keyboard {
+            width: 100%;
+            max-width: 650px;
+            margin-bottom: clamp(8px, 2vw, 15px);
+            display: flex;
+            flex-direction: column;
+            gap: clamp(3px, 1vw, 8px);
+            flex-shrink: 1;
+            min-height: 0;
+            box-sizing: border-box;
+            overflow: hidden;
+            flex-grow: 1;
+            justify-content: center;
+        }
+
+        /* Main keys container */
+        .main-keys-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(clamp(15px, 3.5vw, 55px), 1fr));
+            gap: clamp(2px, 0.8vw, 6px);
+            padding: clamp(3px, 1vw, 8px);
+            background-color: rgba(10, 10, 31, 0.7);
+            border-radius: 8px;
+            box-shadow: inset 0 0 8px rgba(0, 255, 255, 0.1);
+            grid-auto-rows: minmax(clamp(25px, 5vw, 45px), 1fr);
+            box-sizing: border-box;
+            align-items: stretch;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        .key {
+            background-color: var(--color-teclado-key-background);
+            color: var(--color-teclado-key-text);
+            border: 1px solid var(--color-teclado-key-border);
+            border-radius: 5px;
+            padding: 2px 1px;
+            font-size: var(--font-size-keyboard-key);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease; /* Transition for hover and active */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-transform: none; /* Do not force uppercase/lowercase with CSS */
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            min-width: 0;
+            min-height: 0;
+            box-sizing: border-box;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .key:hover {
+            background-color: var(--color-teclado-key-hover);
+            box-shadow: 0 0 6px var(--color-acento-neon-azul);
+            transform: translateY(-1px);
+        }
+        /* --- STYLE FOR VISUAL FEEDBACK ON KEY PRESS --- */
+        .key:active {
+            background-color: var(--color-acento-neon-azul); /* Neon cyan color when pressed */
+            box-shadow: 0 0 10px var(--color-acento-neon-azul);
+            transform: scale(0.95); /* Slightly smaller */
+        }
+
+        .key.shift.active {
+            background-color: var(--color-shift-active);
+            box-shadow: 0 0 8px var(--color-shift-active);
+            color: var(--color-fondo-oscuro);
+        }
+        .key.delete-key {
+            font-size: var(--font-size-delete-key); /* Apply smaller size */
+        }
+        .key.span-2-columns {
+            grid-column: span 2;
+        }
+
+        /* Media queries to adjust keyboard on very small screens */
+        @media (max-width: 480px) {
+            .main-keys-grid {
+                grid-template-columns: repeat(auto-fit, minmax(clamp(12px, 3.2vw, 40px), 1fr));
+                gap: clamp(1px, 0.5vw, 4px);
+                padding: clamp(2px, 0.8vw, 6px);
+                grid-auto-rows: minmax(clamp(20px, 4.5vw, 35px), 1fr);
+            }
+            .key {
+                font-size: clamp(0.7em, 1.8vw, 1.4em);
+                padding: 1px 0px;
+            }
+            .key.delete-key {
+                font-size: calc(clamp(0.7em, 1.8vw, 1.4em) * 0.7); /* Adjust proportionally */
+            }
+        }
+        /* Adjustment for very low screens (e.g., some mobile in landscape) */
+        @media (max-height: 550px) {
+            .view-content-container {
+                max-height: 98vh;
+                padding: clamp(8px, 2.5vw, 25px);
+            }
+            .virtual-keyboard {
+                gap: clamp(2px, 0.8vw, 6px);
+                margin-bottom: clamp(4px, 1.5vw, 10px);
+            }
+            .main-keys-grid {
+                gap: clamp(1px, 0.5vw, 4px);
+                padding: clamp(2px, 0.8vw, 6px);
+                grid-auto-rows: minmax(clamp(20px, 4vw, 35px), 1fr);
+            }
+            .key {
+                font-size: clamp(0.65em, 1.6vw, 1.3em);
+                padding: 1px 0px;
+            }
+            .key.delete-key {
+                font-size: calc(clamp(0.65em, 1.6vw, 1.3em) * 0.7); /* Adjust proportionally */
+            }
+            .main-button, .secondary-button {
+                padding: 6px 12px;
+                font-size: clamp(0.7em, 1.8vw, 1.4em);
+                margin-top: clamp(6px, 1.8vw, 15px);
+                min-width: 80px;
+            }
+            #playerNameInput {
+                padding: 6px 10px;
+                font-size: clamp(0.8em, 2vw, 1.5em);
+            }
+        }
+        /* Media query for extremely small screens */
+        @media (max-width: 350px), (max-height: 400px) {
+            .view-content-container {
+                padding: clamp(5px, 2vw, 20px);
+            }
+            h2 {
+                font-size: clamp(1.5em, 3.5vw, 3em);
+                margin-bottom: clamp(4px, 1.5vw, 10px);
+            }
+            #playerNameInput {
+                font-size: clamp(0.7em, 1.8vw, 1.3em);
+                padding: 5px 8px;
+            }
+            .virtual-keyboard {
+                gap: clamp(1px, 0.5vw, 4px);
+                margin-bottom: clamp(2px, 1vw, 8px);
+            }
+            .main-keys-grid {
+                grid-template-columns: repeat(auto-fit, minmax(clamp(10px, 2.8vw, 35px), 1fr));
+                gap: 1px;
+                padding: 2px;
+                grid-auto-rows: minmax(clamp(18px, 3.8vw, 30px), 1fr);
+            }
+            .key {
+                font-size: clamp(0.6em, 1.5vw, 1.2em);
+                padding: 0;
+                border-radius: 3px;
+            }
+            .key.delete-key {
+                font-size: calc(clamp(0.6em, 1.5vw, 1.2em) * 0.7); /* Adjust proportionally */
+            }
+            .main-button, .secondary-button {
+                padding: 5px 10px;
+                font-size: clamp(0.6em, 1.5vw, 1.2em);
+                margin-top: clamp(5px, 1.5vw, 12px);
+                min-width: 70px;
+            }
+        }
+
+
+        /* --- RULES SCREEN --- */
+        #rulesView {
+            background-color: var(--color-fondo-oscuro);
+        }
+        .rules-text-container {
+            background-color: rgba(10, 10, 31, 0.7);
+            padding: clamp(12px, 2.5vw, 25px);
+            border-radius: 10px;
+            border: 1px solid var(--color-teclado-key-border);
+            max-width: 90%;
+            min-width: 280px;
+            text-align: left;
+            box-shadow: 0 0 12px rgba(0, 255, 255, 0.1);
+            box-sizing: border-box;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: clamp(12px, 2.5vw, 20px);
+            flex-shrink: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .rules-text-container ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            flex-shrink: 1;
+            min-height: 0;
+        }
+        .rules-text-container li {
+            margin-bottom: clamp(2px, 0.8vw, 8px);
+        }
+        .rules-text-container li p {
+            font-size: var(--font-size-rules-text);
+            line-height: 1.4;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+            margin: 0;
+        }
+        .rules-text-container li p strong {
+            color: var(--color-acento-neon-verde);
+        }
+
+        /* --- MAIN GAME SCREEN --- */
+        #gameView {
+            background-color: var(--color-fondo-oscuro);
+            justify-content: flex-start; /* Align content at the top */
+            padding: 1.5vh 0;
+            box-sizing: border-box;
+        }
+        .game-hud {
+            width: 90%;
+            max-width: 900px;
+            padding: 0.8vh 1.5vw;
+            background-color: var(--color-fondo-secundario);
+            border-radius: 8px;
+            margin-top: 1vh;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 0 12px rgba(0, 255, 255, 0.1);
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        .hud-item {
+            font-size: var(--font-size-text-small);
+            color: var(--color-texto-claro);
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            margin: 0.2vh 0.8vw;
+        }
+        .hud-item span {
+            font-size: var(--font-size-text-medium);
+            font-weight: bold;
+            color: var(--color-acento-neon-verde);
+            text-shadow: 0 0 4px rgba(57, 255, 20, 0.5);
+            /* --- HUD Animation --- */
+            transition: transform 0.2s ease-out, color 0.2s ease-out, text-shadow 0.2s ease-out;
+        }
+        @keyframes hud-highlight {
+            0% { transform: scale(1); color: var(--color-acento-neon-verde); text-shadow: 0 0 4px rgba(57, 255, 20, 0.5); }
+            50% { transform: scale(1.1); color: var(--color-acento-neon-azul); text-shadow: 0 0 10px var(--color-acento-neon-azul); }
+            100% { transform: scale(1); color: var(--color-acento-neon-verde); text-shadow: 0 0 4px rgba(57, 255, 20, 0.5); }
+        }
+        .hud-item span.highlight {
+            animation: hud-highlight 0.5s ease-out;
+        }
+        /* Energy bar styles */
+        .energy-bar-container {
+            width: clamp(80px, 15vw, 150px); /* Responsive width */
+            height: clamp(10px, 1.5vw, 16px); /* Responsive height */
+            background-color: var(--color-fondo-secundario);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--color-acento-neon-verde);
+            box-shadow: 0 0 5px rgba(57, 255, 20, 0.3);
+            margin-left: 8px; /* Space from "Energy:" text */
+            position: relative;
+        }
+        .energy-bar-fill {
+            height: 100%;
+            width: 100%; /* Default value, adjusted with JS */
+            background-color: var(--color-acento-neon-verde);
+            transition: width 0.3s ease-out, background-color 0.3s ease-out, box-shadow 0.3s ease-out;
+            border-radius: 8px;
+            box-shadow: 0 0 8px var(--color-acento-neon-verde);
+        }
+        .energy-bar-fill.low {
+            background-color: var(--color-acento-neon-rojo);
+            box-shadow: 0 0 10px var(--color-acento-neon-rojo);
+            animation: pulsate-red 1s infinite alternate;
+        }
+        .energy-bar-fill.medium {
+            background-color: var(--color-acento-neon-amarillo);
+            box-shadow: 0 0 10px var(--color-acento-neon-amarillo);
+        }
+        @keyframes pulsate-red {
+            0% { box-shadow: 0 0 5px var(--color-acento-neon-rojo); opacity: 0.8; }
+            50% { box-shadow: 0 0 15px var(--color-acento-neon-rojo); opacity: 1; }
+            100% { box-shadow: 0 0 5px var(--color-acento-neon-rojo); opacity: 0.8; }
+        }
+
+
+        /* LEVEL MAP */
+        .level-map-container {
+            width: 90%;
+            max-width: 900px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-top: 1.5vh;
+            margin-bottom: 2vh;
+            padding: 10px 0;
+            position: relative;
+            z-index: 1; /* Ensure map is above other elements if overlapping */
+        }
+        .level-node {
+            width: clamp(30px, 6vw, 60px);
+            height: clamp(30px, 6vw, 60px);
+            background-color: var(--color-fondo-secundario);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: var(--font-size-text-large);
+            color: var(--color-texto-secundario);
+            border: 2px solid var(--color-boton-borde);
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+            transition: all 0.4s ease-in-out;
+            position: relative;
+            z-index: 2; /* Nodes must be above lines */
+        }
+        .level-node.completed {
+            background-color: var(--color-acento-neon-verde);
+            color: var(--color-fondo-oscuro);
+            border-color: var(--color-acento-neon-verde);
+            box-shadow: 0 0 15px var(--color-acento-neon-verde);
+        }
+        .level-node.active-level {
+            border-color: var(--color-acento-neon-azul);
+            box-shadow: 0 0 20px var(--color-acento-neon-azul), 0 0 30px rgba(0, 255, 255, 0.5);
+            transform: scale(1.1);
+            animation: pulsate-blue 1.5s infinite alternate;
+        }
+        @keyframes pulsate-blue {
+            0% { transform: scale(1.05); box-shadow: 0 0 15px var(--color-acento-neon-azul), 0 0 25px rgba(0, 255, 255, 0.4); }
+            50% { transform: scale(1.1); box-shadow: 0 0 25px var(--color-acento-neon-azul), 0 0 40px rgba(0, 255, 255, 0.7); }
+            100% { transform: scale(1.05); box-shadow: 0 0 15px var(--color-acento-neon-azul), 0 0 25px rgba(0, 255, 255, 0.4); }
+        }
+
+        .level-line {
+            position: absolute;
+            height: 3px;
+            background-color: var(--color-boton-borde); /* Default line color (not completed) */
+            transition: background-color 0.4s ease-in-out, box-shadow 0.4s ease-in-out;
+            z-index: 1; /* Lines must be below nodes */
+        }
+        .level-line.completed-line {
+            background-color: var(--color-acento-neon-verde);
+            box-shadow: 0 0 10px var(--color-acento-neon-verde);
+        }
+        /* Adjustment for lines to be between nodes */
+        .level-node:not(:last-child) {
+            margin-right: clamp(10px, 4vw, 40px); /* Space between nodes for the line */
+        }
+        .level-node:not(:first-child) {
+            margin-left: clamp(10px, 4vw, 40px);
+        }
+
+        /* QUESTION PROGRESS NODES (NEW) */
+        .question-progress-container {
+            display: flex;
+            gap: clamp(2px, 0.5vw, 5px); /* Space between tiny nodes */
+            margin-left: 8px; /* Space from the "Pregunta: " text */
+            align-items: center;
+        }
+        .progress-node {
+            width: clamp(8px, 1.5vw, 15px);
+            height: clamp(8px, 1.5vw, 15px);
+            background-color: var(--color-fondo-oscuro); /* Default: empty */
+            border: 1px solid var(--color-boton-borde);
+            border-radius: 3px; /* Small square */
+            transition: all 0.2s ease-out;
+            box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+        }
+        .progress-node.completed-q {
+            background-color: var(--color-acento-neon-verde);
+            border-color: var(--color-acento-neon-verde);
+            box-shadow: 0 0 5px var(--color-acento-neon-verde);
+        }
+        .progress-node.current-q {
+            background-color: var(--color-fondo-secundario);
+            border-color: var(--color-acento-neon-azul);
+            box-shadow: 0 0 8px var(--color-acento-neon-azul);
+            animation: pulsate-blue-small 1s infinite alternate;
+        }
+        @keyframes pulsate-blue-small {
+            0% { box-shadow: 0 0 4px var(--color-acento-neon-azul); }
+            50% { box-shadow: 0 0 10px var(--color-acento-neon-azul); }
+            100% { box-shadow: 0 0 4px var(--color-acento-neon-azul); }
+        }
+
+
+        .question-container, .options-container {
+            transition: opacity 0.3s ease-out; /* Transition for question load animation */
+        }
+
+        .question-container.fade-out, .options-container.fade-out {
+            opacity: 0;
+        }
+
+        .question-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 95%;
+            max-width: 850px;
+            background-color: var(--color-boton-fondo-primario);
+            border-radius: 12px;
+            padding: clamp(15px, 4vw, 40px);
+            margin: clamp(10px, 2.5vw, 25px) 0;
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            min-height: 10vh;
+            box-sizing: border-box;
+            flex-shrink: 1;
+            min-height: 0;
+        }
+        #questionText {
+            font-size: var(--font-size-h2);
+            color: var(--color-texto-claro);
+            margin: 0;
+            line-height: 1.2;
+            word-wrap: break-word;
+            min-width: 0;
+        }
+
+        .options-container {
+            width: 95%;
+            max-width: 850px;
+            margin-bottom: 1vh;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: clamp(8px, 1.8vw, 15px);
+            padding: clamp(12px, 2.5vw, 25px);
+            background-color: rgba(10, 10, 31, 0.7);
+            border-radius: 12px;
+            box-shadow: inset 0 0 8px rgba(0, 255, 255, 0.1);
+            flex-shrink: 0;
+            min-height: 0;
+        }
+
+        @media (max-width: 600px) {
+            .options-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+
+        .answer-button {
+            background-color: var(--color-boton-fondo-primario);
+            color: var(--color-boton-texto);
+            border: 2px solid var(--color-boton-borde);
+            border-radius: 8px;
+            padding: clamp(8px, 2vw, 15px);
+            font-size: var(--font-size-button);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 60px;
+            box-sizing: border-box;
+            word-wrap: break-word;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: normal;
+        }
+        .answer-button:hover {
+            background-color: var(--color-boton-hover-fondo);
+            color: var(--color-boton-hover-texto);
+            box-shadow: 0 0 12px var(--color-boton-hover-brillo);
+            transform: translateY(-2px);
+        }
+        .answer-button.correct {
+            background-color: var(--color-feedback-correcto);
+            box-shadow: 0 0 15px var(--color-feedback-correcto);
+            color: var(--color-fondo-oscuro);
+            border-color: var(--color-feedback-correcto);
+        }
+        .answer-button.incorrect {
+            background-color: var(--color-feedback-incorrecto);
+            box-shadow: 0 0 15px var(--color-feedback-incorrecto);
+            color: var(--color-fondo-oscuro);
+            border-color: var(--color-feedback-incorrecto);
+        }
+
+
+        /* --- FEEDBACK MESSAGE (CORRECT/INCORRECT/LEVEL COMPLETE) --- */
+        #feedbackMessage {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column; /* To center message and hint */
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out; /* Added transform transition */
+            will-change: opacity, transform, text-shadow;
+            transform: scale(0.9); /* Starts slightly smaller */
+        }
+        #feedbackMessage.show {
+            opacity: 1;
+            animation: pulsate-neon 1s infinite alternate;
+            transform: scale(1); /* Scales to normal size when shown */
+        }
+        /* Specific styles for CORRECT/Level Complete message */
+        #feedbackMessage.correct-feedback {
+            font-size: var(--font-size-feedback-correct);
+            color: var(--color-acento-neon-verde);
+            text-shadow: 0 0 20px var(--color-acento-neon-verde);
+            white-space: nowrap; /* Prevent unexpected line breaks */
+        }
+        #feedbackMessage.level-up {
+            font-size: var(--font-size-feedback-correct);
+            color: var(--color-acento-neon-azul);
+            text-shadow: 0 0 20px var(--color-acento-neon-azul);
+            white-space: pre-line; /* Allow line breaks for level complete message */
+        }
+        /* Specific styles for INCORRECT message */
+        #feedbackMessage.incorrect-feedback {
+            font-size: var(--font-size-feedback-incorrect); /* Smaller size */
+            color: var(--color-acento-neon-rojo);
+            text-shadow: 0 0 5px var(--color-acento-neon-rojo); /* Less glow */
+            white-space: pre-line; /* Allow line breaks for hint */
+            padding: 0 10px; /* A bit of padding for the hint if it takes multiple lines */
+            box-sizing: border-box;
+        }
+
+        /* NEON PULSATE / FOCUS ANIMATION */
+        @keyframes pulsate-neon {
+            0% {
+                text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 20px currentColor;
+                transform: scale(0.98);
+                opacity: 0.9;
+            }
+            50% {
+                text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 40px currentColor;
+                transform: scale(1.02);
+                opacity: 1;
+            }
+            100% {
+                text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 20px currentColor;
+                transform: scale(0.98);
+                opacity: 0.9;
+            }
+        }
+
+        /* --- FINAL GAME SCREEN --- */
+        #finalView h2 {
+            margin-bottom: 15px;
+        }
+        #finalMessage {
+            font-size: var(--font-size-text-large);
+            margin-bottom: 8px;
+        }
+        .final-score-label {
+            font-size: var(--font-size-text-medium);
+            color: var(--color-texto-secundario);
+            margin-top: 15px;
+        }
+        #finalScore {
+            font-size: clamp(2.5em, 7vw, 4.5em);
+            font-weight: bold;
+            color: var(--color-acento-neon-verde);
+            text-shadow: 0 0 12px var(--color-acento-neon-verde);
+            margin-bottom: 25px;
+        }
+        .final-buttons-container {
+            display: flex;
+            gap: clamp(6px, 1.2vw, 12px);
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* --- TOP 7 SCREEN --- */
+        #top7View h2 {
+            margin-bottom: clamp(10px, 2vw, 20px);
+        }
+        #top7View .view-content-container {
+            padding: clamp(10px, 3vw, 25px);
+            max-height: 98vh;
+            justify-content: flex-start; /* Ensure content aligns at the top */
+        }
+        .score-list-container {
+            width: 90%;
+            max-width: 550px;
+            background-color: rgba(10, 10, 31, 0.7);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 12px rgba(0, 255, 255, 0.1);
+            flex-grow: 1;
+            flex-shrink: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .score-list-header, .score-item {
+            display: grid;
+            grid-template-columns: 0.5fr 2fr 1fr;
+            gap: clamp(4px, 1vw, 8px);
+            padding: clamp(4px, 1.2vw, 8px) clamp(8px, 2vw, 12px);
+            border-bottom: 1px solid var(--color-teclado-key-border);
+            align-items: center;
+        }
+        .score-list-header {
+            background-color: var(--color-fondo-secundario);
+            font-weight: bold;
+            color: var(--color-acento-neon-azul);
+            text-transform: uppercase;
+            font-size: var(--font-size-text-small);
+        }
+        .score-item {
+            color: var(--color-texto-claro);
+            font-size: var(--font-size-text-small);
+        }
+        .score-item:nth-child(odd) {
+            background-color: rgba(10, 10, 31, 0.5);
+        }
+        .score-item:hover {
+            background-color: var(--color-boton-hover-fondo);
+            color: var(--color-boton-hover-texto);
+        }
+        .score-rank {
+            color: var(--color-acento-neon-verde);
+            font-weight: bold;
+        }
+        .score-name, .score-points {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .score-points {
+            color: var(--color-acento-neon-azul);
+            font-weight: bold;
+            text-align: right;
+        }
+
+        /* Specific adjustments for rules on very small screens */
+        @media (max-width: 480px), (max-height: 550px) {
+            .rules-text-container {
+                padding: clamp(8px, 2vw, 20px);
+                margin-bottom: clamp(8px, 2vw, 15px);
+                max-width: 95%;
+            }
+            .rules-text-container li p {
+                font-size: clamp(0.7em, 1.8vw, 1.2em);
+                line-height: 1.3;
+                margin-bottom: clamp(1px, 0.5vw, 6px);
+            }
+            /* Adjustments for Top 7 on mobile/small screens */
+            #top7View .view-content-container {
+                padding: clamp(6px, 2vw, 18px);
+            }
+            .score-list-header, .score-item {
+                padding: clamp(3px, 1vw, 6px) clamp(6px, 1.5vw, 10px);
+                font-size: clamp(0.7em, 1.8vw, 0.9em);
+                gap: 4px;
+            }
+            .score-points {
+                font-size: clamp(0.8em, 2vw, 1em);
+            }
+            /* Adjustments for HUD and level map on small screens */
+            .game-hud {
+                padding: 0.5vh 1vw;
+                flex-direction: column; /* Stack HUD items vertically on small screens */
+                gap: 5px; /* Space between HUD items */
+            }
+            .hud-item {
+                font-size: clamp(0.7em, 1.8vw, 1em);
+                margin: 0; /* Remove margin */
+                justify-content: center; /* Center items within flex item */
+                width: 100%; /* Take full width of HUD container */
+            }
+            .hud-item span {
+                font-size: clamp(0.8em, 2vw, 1.2em);
+            }
+            .energy-bar-container {
+                width: clamp(60px, 12vw, 100px);
+                height: clamp(8px, 1.2vw, 12px);
+            }
+            .level-node {
+                width: clamp(25px, 5vw, 45px);
+                height: clamp(25px, 5vw, 45px);
+                font-size: clamp(1em, 2.5vw, 1.5em);
+            }
+            .level-node:not(:last-child) {
+                margin-right: clamp(5px, 2vw, 20px);
+            }
+            .level-node:not(:first-child) {
+                margin-left: clamp(5px, 2vw, 20px);
+            }
+            .level-map-container {
+                margin-top: 1vh;
+                margin-bottom: 1.5vh;
+            }
+            /* Question progress nodes on small screens */
+            .question-progress-container {
+                margin-left: 0; /* Remove left margin if HUD items are stacked */
+                justify-content: center; /* Center the nodes within their item */
+                width: 100%;
+                margin-top: 5px; /* Add some top margin if it's on a new line */
+            }
+            .progress-node {
+                width: clamp(6px, 1.2vw, 12px);
+                height: clamp(6px, 1.2vw, 12px);
+            }
+        }
+        @media (max-width: 350px), (max-height: 400px) {
+            .view-content-container {
+                padding: clamp(5px, 1.5vw, 15px);
+                max-width: 98%;
+            }
+            .rules-text-container li p {
+                font-size: clamp(0.65em, 1.6vw, 1.1em);
+                line-height: 1.2;
+                margin-bottom: clamp(0px, 0.2vw, 4px);
+            }
+            /* Adjustments for Top 7 on extremely small screens */
+            #top7View .view-content-container {
+                padding: clamp(4px, 1.2vw, 12px);
+            }
+            .score-list-header, .score-item {
+                padding: clamp(2px, 0.8vw, 5px) clamp(4px, 1.2vw, 8px);
+                font-size: clamp(0.6em, 1.5vw, 0.8em);
+                gap: 2px;
+            }
+            /* Adjustments for HUD and level map on extremely small screens */
+            .hud-item {
+                font-size: clamp(0.6em, 1.5vw, 0.9em);
+                margin: 0;
+            }
+            .hud-item span {
+                font-size: clamp(0.7em, 1.8vw, 1.1em);
+            }
+            .energy-bar-container {
+                width: clamp(50px, 10vw, 80px);
+                height: clamp(6px, 1vw, 10px);
+            }
+            .level-node {
+                width: clamp(20px, 4vw, 40px);
+                height: clamp(20px, 4vw, 40px);
+                font-size: clamp(0.8em, 2vw, 1.2em);
+                border-width: 1px;
+            }
+            .level-node:not(:last-child) {
+                margin-right: clamp(3px, 1.5vw, 15px);
+            }
+            .level-node:not(:first-child) {
+                margin-left: clamp(3px, 1.5vw, 15px);
+            }
+            .level-map-container {
+                margin-top: 0.8vh;
+                margin-bottom: 1vh;
+            }
+            /* Question progress nodes on extremely small screens */
+            .question-progress-container {
+                gap: 1px;
+                margin-top: 3px;
+            }
+            .progress-node {
+                width: clamp(5px, 1vw, 10px);
+                height: clamp(5px, 1vw, 10px);
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="preloadView" class="view active">
+        <div class="view-content-container">
+            <h1>BitKids: La Aventura Digital</h1>
+            <p>Iniciando Sistema Digital...</p>
+            <div class="progress-bar-container">
+                <div id="preloadProgressBar" class="progress-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="welcomeView" class="view">
+        <div class="view-content-container">
+            <h1>BitKids: La Aventura Digital</h1>
+            <p>¡Bienvenido al Ciberespacio!</p>
+            <div class="welcome-buttons-container">
+                <button id="startButton" class="main-button">Conectar</button>
+                <button id="viewTop7FromWelcomeButton" class="secondary-button">Salón de la Fama</button>
+                <button id="closeWindowButton" class="secondary-button">Cerrar Ventana</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="playerNameView" class="view">
+        <div class="view-content-container">
+            <h2>Tu Identificador de Usuario:</h2>
+            <input type="text" id="playerNameInput" maxlength="15" placeholder="EJ: BITHERO" readonly>
+
+            <div id="virtualKeyboard" class="virtual-keyboard">
+                <div id="mainKeysContainer" class="main-keys-grid">
+                    </div>
+            </div>
+
+            <button id="confirmNameButton" class="main-button">Confirmar Identidad</button>
+        </div>
+    </div>
+
+    <div id="rulesView" class="view">
+        <div class="view-content-container">
+            <h2>El Protocolo de Acceso</h2>
+            <div class="rules-text-container">
+                <ul>
+                    <li><p>¡Bienvenido, BitKid! Estás a punto de iniciar una **Aventura Digital**.</p></li>
+                    <li><p>Tu misión es responder preguntas sobre el fascinante mundo de la **Informática**.</p></li>
+                    <li><p>Ganarás **Puntos** por cada respuesta correcta.</p></li>
+                    <li><p>¡Cuidado! Tienes **Energía** limitada. Cada respuesta incorrecta te restará energía.</p></li>
+                    <li><p>Si tu energía llega a cero, la simulación terminará.</p></li>
+                    <li><p>Hay **5 Niveles** de conocimiento por explorar. ¡Desbloquéalos todos!</p></li>
+                    <li><p>Utiliza el **Mouse** para seleccionar tus respuestas. ¡A puntear se ha dicho!</p></li>
+                </ul>
+            </div>
+            <button id="startSimulationButton" class="main-button">Iniciar Simulación</button>
+        </div>
+    </div>
+
+    <div id="gameView" class="view">
+        <div id="levelMap" class="level-map-container">
+            </div>
+
+        <div class="game-hud">
+            <div class="hud-item">Puntos: <span id="gameScore">0</span></div>
+            <div class="hud-item">Energía:
+                <div class="energy-bar-container">
+                    <div id="gameEnergyBar" class="energy-bar-fill"></div>
+                </div>
+            </div>
+            <div class="hud-item">
+                Nivel: <span id="gameLevel">1</span>
+                <div id="questionProgress" class="question-progress-container"></div>
+            </div>
+            </div>
+
+        <div class="question-container">
+            <p id="questionText">Aquí aparecerá la pregunta del juego.</p>
+        </div>
+
+        <div id="optionsContainer" class="options-container">
+            </div>
+
+        <div id="feedbackMessage" class="feedback-message"></div>
+    </div>
+
+    <div id="finalView" class="view">
+        <div class="view-content-container">
+            <h2>Reporte de Sesión</h2>
+            <p id="finalMessage">¡Excelente trabajo, BitKid [Nombre del Jugador]!</p>
+            <p class="final-score-label">Tu puntaje final es:</p>
+            <p id="finalScore" class="final-score-value">0</p>
+
+            <div class="final-buttons-container">
+                <button id="playAgainButton" class="main-button">Nueva Sesión</button>
+                <button id="viewTop7Button" class="secondary-button">Ver Salón de la Fama</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="top7View" class="view">
+        <div class="view-content-container">
+            <h2>Salón de la Fama Digital</h2>
+            <div class="score-list-container">
+                <div class="score-list-header">
+                    <span class="score-rank">#</span>
+                    <span class="score-name">Jugador</span>
+                    <span class="score-points">Puntos</span>
+                </div>
+                </div>
+            <div class="final-buttons-container">
+                <button id="top7NewSessionButton" class="main-button">Nueva Sesión</button>
+                <button id="top7MainMenuButton" class="secondary-button">Menú Principal</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- VARIABLES DE ELEMENTOS DEL DOM ---
+        const preloadView = document.getElementById('preloadView');
+        const welcomeView = document.getElementById('welcomeView');
+        const playerNameView = document.getElementById('playerNameView');
+        const rulesView = document.getElementById('rulesView');
+        const gameView = document.getElementById('gameView');
+        const finalView = document.getElementById('finalView');
+        const top7View = document.getElementById('top7View');
+
+        const startButton = document.getElementById('startButton');
+        const confirmNameButton = document.getElementById('confirmNameButton');
+        const startSimulationButton = document.getElementById('startSimulationButton');
+        const playAgainButton = document.getElementById('playAgainButton');
+        const viewTop7Button = document.getElementById('viewTop7Button');
+        const top7NewSessionButton = document.getElementById('top7NewSessionButton');
+        const top7MainMenuButton = document.getElementById('top7MainMenuButton');
+        const viewTop7FromWelcomeButton = document.getElementById('viewTop7FromWelcomeButton');
+        const closeWindowButton = document.getElementById('closeWindowButton'); // Nuevo botón
+
+        const playerNameInput = document.getElementById('playerNameInput');
+        const mainKeysContainer = document.getElementById('mainKeysContainer');
+
+        const gameScoreDisplay = document.getElementById('gameScore');
+        const gameEnergyBar = document.getElementById('gameEnergyBar'); // Elemento de la barra de energía
+        const gameLevelDisplay = document.getElementById('gameLevel');
+        // const questionCounterDisplay = document.getElementById('questionCounter'); // Comentado, reemplazado por nodos visuales
+        const questionProgressContainer = document.getElementById('questionProgress'); // NUEVO: Contenedor de progreso de preguntas
+        const questionTextElement = document.getElementById('questionText');
+        const optionsContainer = document.getElementById('optionsContainer');
+        const feedbackMessage = document.getElementById('feedbackMessage');
+        const levelMapContainer = document.getElementById('levelMap'); // Contenedor del mapa de niveles
+
+
+        const finalMessageElement = document.getElementById('finalMessage');
+        const finalScoreElement = document.getElementById('finalScore');
+        const top7ListContainer = document.querySelector('#top7View .score-list-container');
+
+
+        // --- VARIABLES DE ESTADO DEL JUEGO (GLOBALES) ---
+        let currentPlayerName = '';
+        let currentScore = 0;
+        let currentEnergy = 3; // 3 "vidas" iniciales
+        let currentLevel = 1;
+        let currentQuestionIndex = 0;
+        let isShiftActive = true; // Empieza en mayúsculas por defecto
+        const maxNameLength = 15;
+        const totalLevels = 5;
+        const initialEnergy = 3; // Para resetear la energía al inicio de un nuevo juego
+
+
+        // --- BANCO DE PREGUNTAS ---
+        const questionsBank = {
+            level1: [
+                {
+                    id: 'win_1',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué es el **hardware** de una computadora?',
+                    options: [
+                        'Las partes físicas que puedes tocar.',
+                        'Los programas y aplicaciones.',
+                        'Los archivos de internet.',
+                        'Los videos y la música.'
+                    ],
+                    correctAnswer: 'Las partes físicas que puedes tocar.',
+                    hint: 'Piensa en las piezas que puedes ver y tocar.'
+                },
+                {
+                    id: 'win_2',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Cuál de estos NO es un dispositivo de **hardware**?',
+                    options: [
+                        'Teclado',
+                        'Ratón',
+                        'Monitor',
+                        'Microsoft Word'
+                    ],
+                    correctAnswer: 'Microsoft Word',
+                    hint: 'El software es intangible.'
+                },
+                {
+                    id: 'win_3',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué significa la sigla **CPU**?',
+                    options: [
+                        'Control Principal de Usuarios',
+                        'Unidad Central de Procesamiento',
+                        'Centro Personal Unificado',
+                        'Conexión de Procesos Universales'
+                    ],
+                    correctAnswer: 'Unidad Central de Procesamiento',
+                    hint: 'Es el "cerebro" de la computadora.'
+                },
+                {
+                    id: 'win_4',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué es un **sistema operativo**?',
+                    options: [
+                        'Un programa para jugar videojuegos.',
+                        'El programa principal que gestiona el hardware y software.',
+                        'Un antivirus.',
+                        'Una aplicación para dibujar.'
+                    ],
+                    correctAnswer: 'El programa principal que gestiona el hardware y software.',
+                    hint: 'Es la base para que todo funcione.'
+                },
+                {
+                    id: 'win_5',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué dispositivo usas para ver las imágenes y texto de la computadora?',
+                    options: [
+                        'Teclado',
+                        'Impresora',
+                        'Monitor',
+                        'Altavoces'
+                    ],
+                    correctAnswer: 'Monitor',
+                    hint: 'Es la pantalla.'
+                },
+                {
+                    id: 'win_6',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Cuál de estos es un **dispositivo de entrada**?',
+                    options: [
+                        'Impresora',
+                        'Monitor',
+                        'Teclado',
+                        'Altavoces'
+                    ],
+                    correctAnswer: 'Teclado',
+                    hint: 'Sirve para meter información.'
+                },
+                {
+                    id: 'win_7',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué es el **software** de una computadora?',
+                    options: [
+                        'Las partes de metal.',
+                        'Los cables y conexiones.',
+                        'Los programas y aplicaciones que no puedes tocar.',
+                        'El ventilador interno.'
+                    ],
+                    correctAnswer: 'Los programas y aplicaciones que no puedes tocar.',
+                    hint: 'Es intangible, como las instrucciones.'
+                },
+                {
+                    id: 'win_8',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué programa usas para dibujar y pintar en la computadora?',
+                    options: [
+                        'Calculadora',
+                        'Paint',
+                        'Bloc de notas',
+                        'Explorador de archivos'
+                    ],
+                    correctAnswer: 'Paint',
+                    hint: 'Es el programa básico de dibujo.'
+                },
+                {
+                    id: 'win_9',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué es un **archivo** en la computadora?',
+                    options: [
+                        'Un tipo de virus.',
+                        'Un cajón para guardar cosas.',
+                        'Un documento, imagen, video o cualquier dato digital.',
+                        'Una parte del hardware.'
+                    ],
+                    correctAnswer: 'Un documento, imagen, video o cualquier dato digital.',
+                    hint: 'Es donde guardas tu información digital.'
+                },
+                {
+                    id: 'win_10',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Cuál es la función principal de un **ratón (mouse)**?',
+                    options: [
+                        'Escribir texto.',
+                        'Imprimir documentos.',
+                        'Mover el puntero en la pantalla y seleccionar elementos.',
+                        'Escuchar música.'
+                    ],
+                    correctAnswer: 'Mover el puntero en la pantalla y seleccionar elementos.',
+                    hint: 'Es tu mano virtual en la pantalla.'
+                }
+            ],
+            level2: [
+                {
+                    id: 'word_1',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Para qué sirve el programa **Microsoft Word**?',
+                    options: [
+                        'Para hacer dibujos.',
+                        'Para escribir documentos y cartas.',
+                        'Para navegar por internet.',
+                        'Para hacer cálculos de matemáticas.'
+                    ],
+                    correctAnswer: 'Para escribir documentos y cartas.',
+                    hint: 'Es como tu cuaderno digital.'
+                },
+                {
+                    id: 'word_2',
+                    type: 'multiple_choice_text',
+                    questionText: 'En Word, ¿qué botón usas para **guardar** un documento?',
+                    options: [
+                        'El icono de una lupa.',
+                        'El icono de un disquete.',
+                        'El icono de una impresora.',
+                        'El icono de una tijera.'
+                    ],
+                    correctAnswer: 'El icono de un disquete.',
+                    hint: 'Es un símbolo antiguo pero clásico para guardar.'
+                },
+                {
+                    id: 'word_3',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué acción realiza el botón de **"Copiar"** en Word?',
+                    options: [
+                        'Mover un texto a otro lugar.',
+                        'Borrar el texto seleccionado.',
+                        'Duplicar el texto sin quitarlo de su lugar original.',
+                        'Cambiar el color del texto.'
+                    ],
+                    correctAnswer: 'Duplicar el texto sin quitarlo de su lugar original.',
+                    hint: 'Haces una copia.'
+                },
+                {
+                    id: 'word_4',
+                    type: 'multiple_choice_text',
+                    questionText: 'Si quieres que un texto se vea más oscuro y grueso en Word, ¿qué opción usas?',
+                    options: [
+                        'Cursiva (K)',
+                        'Subrayado (S)',
+                        'Negrita (N)',
+                        'Alineación'
+                    ],
+                    correctAnswer: 'Negrita (N)',
+                    hint: 'Para que resalte.'
+                },
+                {
+                    id: 'word_5',
+                    type: 'multiple_choice_text',
+                    questionText: 'En Word, ¿qué herramienta te ayuda a corregir las faltas de ortografía?',
+                    options: [
+                        'Contador de palabras',
+                        'Revisión ortográfica y gramatical',
+                        'Diccionario de sinónimos',
+                        'Traducir'
+                    ],
+                    correctAnswer: 'Revisión ortográfica y gramatical',
+                    hint: 'Es tu ayudante para escribir bien.'
+                },
+                {
+                    id: 'word_6',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Cómo se llama el área en Word donde ves y escribes tu documento?',
+                    options: [
+                        'Barra de tareas',
+                        'Escritorio',
+                        'Hoja de cálculo',
+                        'Área de trabajo o Página'
+                    ],
+                    correctAnswer: 'Área de trabajo o Página',
+                    hint: 'Es tu lienzo en blanco.'
+                },
+                {
+                    id: 'word_7',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Cuál de estas es una opción para **alinear** texto en Word?',
+                    options: [
+                        'Pintar',
+                        'Cortar',
+                        'Centrar',
+                        'Pegar'
+                    ],
+                    correctAnswer: 'Centrar',
+                    hint: 'Sirve para ubicar el texto.'
+                },
+                {
+                    id: 'word_8',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Para qué sirve el botón de **"Pegar"** en Word?',
+                    options: [
+                        'Para borrar un texto.',
+                        'Para mover texto de un lugar a otro.',
+                        'Para insertar un texto o imagen que ha sido copiado o cortado.',
+                        'Para cambiar el tamaño de la fuente.'
+                    ],
+                    correctAnswer: 'Para insertar un texto o imagen que ha sido copiado o cortado.',
+                    hint: 'Es el complemento de copiar/cortar.'
+                },
+                {
+                    id: 'word_9',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué opción en Word usarías para cambiar el **tamaño de la letra**?',
+                    options: [
+                        'Estilo de fuente',
+                        'Color de fuente',
+                        'Tamaño de fuente',
+                        'Efectos de texto'
+                    ],
+                    correctAnswer: 'Tamaño de fuente',
+                    hint: 'Es la medida de tu letra.'
+                },
+                {
+                    id: 'word_10',
+                    type: 'multiple_choice_text',
+                    questionText: 'Si quieres deshacer la última acción que hiciste en Word, ¿qué botón usarías?',
+                    options: [
+                        'Rehacer',
+                        'Guardar',
+                        'Deshacer',
+                        'Imprimir'
+                    ],
+                    correctAnswer: 'Deshacer',
+                    hint: 'Es como una máquina del tiempo para tu documento.'
+                }
+            ],
+            level3: [
+                {
+                    id: 'ppt_1',
+                    type: 'multiple_choice_text',
+                    questionText: 'En PowerPoint, ¿cómo se llama cada "página" donde pones tu información?',
+                    options: ['Hoja', 'Documento', 'Diapositiva', 'Artículo'],
+                    correctAnswer: 'Diapositiva',
+                    hint: 'Son como las "hojas" de tu presentación.'
+                },
+                {
+                    id: 'ppt_2',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué programa usas para crear **presentaciones** con texto, imágenes y videos?',
+                    options: [
+                        'Microsoft Word',
+                        'Microsoft Excel',
+                        'Microsoft PowerPoint',
+                        'Microsoft Paint'
+                    ],
+                    correctAnswer: 'Microsoft PowerPoint',
+                    hint: 'Es el experto en presentaciones.'
+                },
+                {
+                    id: 'ppt_3',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Cómo se llama el efecto que hace que una diapositiva aparezca de una forma especial después de la anterior?',
+                    options: [
+                        'Animación',
+                        'Diseño',
+                        'Transición',
+                        'Formato'
+                    ],
+                    correctAnswer: 'Transición',
+                    hint: 'Es el paso entre una diapositiva y otra.'
+                },
+                {
+                    id: 'ppt_4',
+                    type: 'multiple_choice_text',
+                    questionText: 'Si quieres que un objeto (texto, imagen) se mueva en la diapositiva, ¿qué opción usas?',
+                    options: [
+                        'Transición',
+                        'Animación',
+                        'Diseño de diapositiva',
+                        'Vista previa'
+                    ],
+                    correctAnswer: 'Animación',
+                    hint: 'Hace que las cosas cobren vida dentro de la diapositiva.'
+                },
+                {
+                    id: 'ppt_5',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Cuál es el propósito principal de PowerPoint?',
+                    options: [
+                        'Crear hojas de cálculo.',
+                        'Escribir cartas.',
+                        'Diseñar páginas web.',
+                        'Comunicar ideas de forma visual y efectiva.'
+                    ],
+                    correctAnswer: 'Comunicar ideas de forma visual y efectiva.',
+                    hint: 'Es para exponer tus ideas.'
+                },
+                {
+                    id: 'ppt_6',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué vista te permite ver todas tus diapositivas en pequeño para organizarlas?',
+                    options: [
+                        'Vista Normal',
+                        'Vista Presentación con Diapositivas',
+                        'Vista Clasificador de diapositivas',
+                        'Vista Esquema'
+                    ],
+                    correctAnswer: 'Vista Clasificador de diapositivas',
+                    hint: 'Es como un álbum de tus diapositivas.'
+                },
+                {
+                    id: 'ppt_7',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué elemento puedes insertar en una diapositiva para explicar algo con imágenes?',
+                    options: [
+                        'Solo texto',
+                        'Solo números',
+                        'Imágenes, gráficos y videos',
+                        'Únicamente sonidos'
+                    ],
+                    correctAnswer: 'Imágenes, gráficos y videos', // Mantengo esta respuesta aunque no haya imágenes, para la estructura.
+                    hint: 'Es muy visual.'
+                },
+                {
+                    id: 'ppt_8',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué tecla usas para iniciar una presentación de PowerPoint desde el principio?',
+                    options: [
+                        'Enter',
+                        'Esc',
+                        'F5',
+                        'Espacio'
+                    ],
+                    correctAnswer: 'F5',
+                    hint: 'Es una tecla de función especial.'
+                },
+                {
+                    id: 'ppt_9',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Cómo se llama la plantilla preestablecida que puedes usar para darle un diseño rápido a tu presentación?',
+                    options: [
+                        'Documento',
+                        'Tabla',
+                        'Tema o Plantilla de diseño',
+                        'Gráfico'
+                    ],
+                    correctAnswer: 'Tema o Plantilla de diseño',
+                    hint: 'Te da un aspecto profesional sin esfuerzo.'
+                },
+                {
+                    id: 'ppt_10',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué opción de la cinta de opciones usas para insertar una nueva diapositiva?',
+                    options: [
+                        'Diseño',
+                        'Transiciones',
+                        'Inicio',
+                        'Revisar'
+                    ],
+                    correctAnswer: 'Inicio',
+                    hint: 'Está en la pestaña principal.'
+                }
+            ],
+            level4: [
+                {
+                    id: 'excel_1',
+                    type: 'multiple_choice_text',
+                    questionText: 'En Excel, ¿cómo se llama a cada pequeño cuadro donde puedes escribir datos?',
+                    options: ['Fila', 'Columna', 'Celda', 'Tabla'],
+                    correctAnswer: 'Celda',
+                    hint: 'Es un cuadrito.'
+                },
+                {
+                    id: 'excel_2',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué programa es ideal para organizar datos en **filas y columnas** y hacer cálculos?',
+                    options: [
+                        'Microsoft Word',
+                        'Microsoft PowerPoint',
+                        'Microsoft Excel',
+                        'Microsoft Paint'
+                    ],
+                    correctAnswer: 'Microsoft Excel',
+                    hint: 'Es tu calculadora gigante y organizador.'
+                },
+                {
+                    id: 'excel_3',
+                    type: 'multiple_choice_text',
+                    questionText: 'En Excel, ¿qué es una **fórmula**?',
+                    options: [
+                        'Un dibujo.',
+                        'Un texto largo.',
+                        'Una expresión matemática para realizar cálculos.',
+                        'Una imagen.'
+                    ],
+                    correctAnswer: 'Una expresión matemática para realizar cálculos.',
+                    hint: 'Siempre empiezan con un signo de igual (=).'
+                },
+                {
+                    id: 'excel_4',
+                    type: 'multiple_choice_text',
+                    questionText: 'Si quieres sumar varios números en Excel, ¿qué función usarías?',
+                    options: [
+                        '=RESTA',
+                        '=SUMA',
+                        '=PROMEDIO',
+                        '=CONTAR'
+                    ],
+                    correctAnswer: '=SUMA',
+                    hint: 'Es para agregar cantidades.'
+                },
+                {
+                    id: 'excel_5',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Cómo se identifica una **columna** en Excel?',
+                    options: [
+                        'Con un número (Ej. 1, 2, 3)',
+                        'Con una letra (Ej. A, B, C)',
+                        'Con un símbolo (@, #)',
+                        'Con una palabra (Ej. Total)'
+                    ],
+                    correctAnswer: 'Con una letra (Ej. A, B, C)',
+                    hint: 'Son las verticales.'
+                },
+                {
+                    id: 'excel_6',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Cómo se identifica una **fila** en Excel?',
+                    options: [
+                        'Con un número (Ej. 1, 2, 3)',
+                        'Con una letra (Ej. A, B, C)',
+                        'Con un símbolo (!, $)',
+                        'Con un color'
+                    ],
+                    correctAnswer: 'Con un número (Ej. 1, 2, 3)',
+                    hint: 'Son las horizontales.'
+                },
+                {
+                    id: 'excel_7',
+                    type: 'multiple_choice_text',
+                    questionText: 'Si ves el símbolo **"#"** repetido en una celda de Excel (Ej. #####), ¿qué significa?',
+                    options: [
+                        'Hay un error en la fórmula.',
+                        'El texto es demasiado largo para la celda.',
+                        'El número es muy grande y no cabe en la celda.',
+                        'La celda está protegida.'
+                    ],
+                    correctAnswer: 'El número es muy grande y no cabe en la celda.',
+                    hint: 'Necesitas hacer la columna más ancha.'
+                },
+                {
+                    id: 'excel_8',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Para qué sirve el botón de **"Autosuma"** en Excel?',
+                    options: [
+                        'Para restar automáticamente.',
+                        'Para sumar rápidamente un rango de celdas.',
+                        'Para contar celdas vacías.',
+                        'Para dividir automáticamente.'
+                    ],
+                    correctAnswer: 'Para sumar rápidamente un rango de celdas.',
+                    hint: 'Hace el trabajo de sumar por ti.'
+                },
+                {
+                    id: 'excel_9',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué tipo de información se suele guardar en una hoja de cálculo de Excel?',
+                    options: [
+                        'Novelas y cuentos.',
+                        'Imágenes y videos.',
+                        'Datos numéricos, listas, tablas y estadísticas.',
+                        'Presentaciones de diapositivas.'
+                    ],
+                    correctAnswer: 'Datos numéricos, listas, tablas y estadísticas.',
+                    hint: 'Es para manejar números y listas.'
+                },
+                {
+                    id: 'excel_10',
+                    type: 'multiple_choice_text',
+                    questionText: 'En Excel, ¿qué puedes crear para visualizar tus datos de forma gráfica (barras, tortas)?',
+                    options: [
+                        'Dibujos',
+                        'Textos',
+                        'Fórmulas',
+                        'Gráficos'
+                    ],
+                    correctAnswer: 'Gráficos',
+                    hint: 'Hacen tus datos más fáciles de entender visualmente.'
+                }
+            ],
+            level5: [
+                {
+                    id: 'internet_1',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Para qué usamos un **navegador de internet** (como Chrome o Firefox)?',
+                    options: [
+                        'Para escribir cartas.',
+                        'Para ver videos y páginas web.',
+                        'Para hacer dibujos.',
+                        'Para jugar videojuegos en la computadora.'
+                    ],
+                    correctAnswer: 'Para ver videos y páginas web.',
+                    hint: 'Es la puerta para explorar la web.'
+                },
+                {
+                    id: 'internet_2',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué es una **página web**?',
+                    options: [
+                        'Un libro digital.',
+                        'Un documento especial diseñado para ser visto en internet.',
+                        'Un programa de computadora.',
+                        'Una hoja de cálculo.'
+                    ],
+                    correctAnswer: 'Un documento especial diseñado para ser visto en internet.',
+                    hint: 'Es lo que ves cuando navegas.'
+                },
+                {
+                    id: 'internet_3',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué es un **motor de búsqueda** (como Google o Bing)?',
+                    options: [
+                        'Un programa para chatear.',
+                        'Un sitio web que te ayuda a encontrar información en internet.',
+                        'Un tipo de antivirus.',
+                        'Una red social.'
+                    ],
+                    correctAnswer: 'Un sitio web que te ayuda a encontrar información en internet.',
+                    hint: 'Es como un bibliotecario gigante de la red.'
+                },
+                {
+                    id: 'internet_4',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Cuál es la función de un **correo electrónico (email)**?',
+                    options: [
+                        'Realizar videollamadas.',
+                        'Enviar y recibir mensajes digitales.',
+                        'Jugar en línea.',
+                        'Hacer compras en internet.'
+                    ],
+                    correctAnswer: 'Enviar y recibir mensajes digitales.',
+                    hint: 'Es como una carta, pero digital y muy rápida.'
+                },
+                {
+                    id: 'internet_5',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué significa **URL**?',
+                    options: [
+                        'Unidad de Recurso Lógico.',
+                        'Localizador Uniforme de Recursos.',
+                        'Usuario Registrado Local.',
+                        'Ubicación Rápida de Línea.'
+                    ],
+                    correctAnswer: 'Localizador Uniforme de Recursos.',
+                    hint: 'Es la dirección de una página web.'
+                },
+                {
+                    id: 'internet_6',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué es un **virus informático**?',
+                    options: [
+                        'Un juego nuevo.',
+                        'Un programa malicioso que daña la computadora o roba información.',
+                        'Una actualización de software.',
+                        'Un tipo de archivo de música.'
+                    ],
+                    correctAnswer: 'Un programa malicioso que daña la computadora o roba información.',
+                    hint: 'Es como un "bicho" que enferma tu computadora.'
+                },
+                {
+                    id: 'internet_7',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Para qué sirve un programa **antivirus**?',
+                    options: [
+                        'Para hacer la computadora más lenta.',
+                        'Para proteger la computadora de virus y programas maliciosos.',
+                        'Para crear videos.',
+                        'Para organizar tus fotos.'
+                    ],
+                    correctAnswer: 'Para proteger la computadora de virus y programas maliciosos.',
+                    hint: 'Es tu escudo contra las amenazas digitales.'
+                },
+                {
+                    id: 'internet_8',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué es la **"nube" (cloud)** en informática?',
+                    options: [
+                        'Un fenómeno meteorológico.',
+                        'Un lugar físico donde se guardan los archivos.',
+                        'Un sistema para almacenar archivos y programas en internet, no en tu computadora.',
+                        'Una red social.'
+                    ],
+                    correctAnswer: 'Un sistema para almacenar archivos y programas en internet, no en tu computadora.',
+                    hint: 'Tus archivos están "flotando" en internet.'
+                },
+                {
+                    id: 'internet_9',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Qué es una **red social** (como Facebook o Instagram)?',
+                    options: [
+                        'Un tipo de juego de cartas.',
+                        'Un lugar para escribir documentos.',
+                        'Una plataforma para conectar con personas y compartir contenido.',
+                        'Una tienda de informática.'
+                    ],
+                    correctAnswer: 'Una plataforma para conectar con personas y compartir contenido.',
+                    hint: 'Es para socializar digitalmente.'
+                },
+                {
+                    id: 'internet_10',
+                    type: 'multiple_choice_text',
+                    questionText: '¿Cuál es la forma segura de **cerrar sesión** en un sitio web o aplicación?',
+                    options: [
+                        'Simplemente cerrar la ventana del navegador.',
+                        'Apagar la computadora.',
+                        'Hacer clic en el botón "Cerrar sesión" o "Salir".',
+                        'Desconectar el internet.'
+                    ],
+                    correctAnswer: 'Hacer clic en el botón "Cerrar sesión" o "Salir".',
+                    hint: 'Siempre despídete correctamente para proteger tu información.'
+                }
+            ]
+        };
+
+
+        // --- FUNCIONES DE CONTROL DE VISTAS (PANTALLAS) ---
+        function showView(viewToShow) {
+            const views = document.querySelectorAll('.view');
+            views.forEach(view => {
+                view.classList.remove('active');
+            });
+            viewToShow.classList.add('active');
+
+            // Si es la vista de nombre del jugador, genera el teclado
+            if (viewToShow === playerNameView) {
+                generateVirtualKeyboard();
+                playerNameInput.focus();
+            }
+             // Si es la vista de Top 7, carga los puntajes
+            if (viewToShow === top7View) {
+                loadAndDisplayTopScores();
+            }
+        }
+
+        // --- LÓGICA DE PRECARGA ---
+        let loadProgress = 0;
+        let preloadInterval;
+
+        function simulateLoading() {
+            loadProgress = 0;
+            const progressBar = document.getElementById('preloadProgressBar');
+            progressBar.style.width = '0%';
+
+            preloadInterval = setInterval(() => {
+                loadProgress += 10;
+                if (loadProgress > 100) {
+                    loadProgress = 100;
+                }
+                progressBar.style.width = loadProgress + '%';
+
+                if (loadProgress >= 100) {
+                    clearInterval(preloadInterval);
+                    setTimeout(() => {
+                        showView(welcomeView);
+                    }, 500);
+                }
+            }, 100);
+        }
+
+        // --- LÓGICA DE PANTALLA COMPLETA Y ZOOM ---
+        function requestFullScreenAndZoom() {
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen();
+            } else if (document.documentElement.mozRequestFullScreen) {
+                document.documentElement.mozRequestFullScreen();
+            } else if (document.documentElement.webkitRequestFullscreen) {
+                document.documentElement.webkitRequestFullscreen();
+            } else if (document.documentElement.msRequestFullscreen) {
+                document.documentElement.msRequestFullscreen();
+            }
+
+            document.body.style.zoom = "100%";
+        }
+
+        // --- LÓGICA DEL TECLADO VIRTUAL ---
+        const virtualKeys = [
+            'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p',
+            'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l',
+            'z', 'x', 'c', 'v', 'b', 'n', 'm',
+            '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
+            '_', '-', '.', '@', '#', '&', '!', '?'
+        ];
+
+        function generateVirtualKeyboard() {
+            mainKeysContainer.innerHTML = ''; // Clear container before generating
+
+            virtualKeys.forEach(keyText => {
+                const keyButton = document.createElement('div');
+                keyButton.classList.add('key');
+                keyButton.textContent = isShiftActive ? keyText.toUpperCase() : keyText.toLowerCase();
+                keyButton.dataset.originalText = keyText; // Store base text (lowercase)
+                keyButton.addEventListener('click', () => handleKeyPress(keyButton.textContent));
+                mainKeysContainer.appendChild(keyButton);
+            });
+
+            const deleteKey = document.createElement('div');
+            deleteKey.classList.add('key', 'delete-key', 'span-2-columns');
+            deleteKey.textContent = 'BORRAR';
+            deleteKey.addEventListener('click', () => handleKeyPress('DELETE'));
+            mainKeysContainer.appendChild(deleteKey);
+
+            const shiftKey = document.createElement('div');
+            shiftKey.classList.add('key', 'shift', 'span-2-columns');
+            if (isShiftActive) {
+                shiftKey.classList.add('active');
+            }
+            shiftKey.textContent = 'SHIFT';
+            shiftKey.addEventListener('click', toggleShift);
+            mainKeysContainer.appendChild(shiftKey);
+        }
+
+        function handleKeyPress(key) {
+            let currentName = playerNameInput.value;
+
+            if (key === 'DELETE') {
+                playerNameInput.value = currentName.slice(0, -1);
+            } else if (key.length === 1 && currentName.length < maxNameLength) {
+                playerNameInput.value += key;
+            }
+        }
+
+        function toggleShift() {
+            isShiftActive = !isShiftActive;
+            const shiftButton = document.querySelector('.key.shift');
+            if (shiftButton) {
+                shiftButton.classList.toggle('active', isShiftActive);
+            }
+
+            document.querySelectorAll('#mainKeysContainer .key').forEach(keyButton => {
+                const originalText = keyButton.dataset.originalText;
+                if (originalText && originalText.length === 1 && /[a-zA-Z]/.test(originalText)) {
+                    keyButton.textContent = isShiftActive ? originalText.toUpperCase() : originalText.toLowerCase();
+                }
+            });
+        }
+
+        // --- TOP SCORES LOGIC ---
+        const TOP_SCORES_STORAGE_KEY = 'bitkidsTopScores';
+
+        // Fictional scores adjusted between 3000 and 5000 points
+        const fakeFutureScores = [
+            { name: "CyberMax", score: 4850 },
+            { name: "NeoKid", score: 4300 },
+            { name: "DataFlow", score: 3950 },
+            { name: "QuantumQ", score: 3500 },
+            { name: "ByteGirl", score: 3100 }
+        ];
+
+        function getTopScores() {
+            const storedScores = localStorage.getItem(TOP_SCORES_STORAGE_KEY);
+            if (storedScores) {
+                try {
+                    const scores = JSON.parse(storedScores);
+                    // Validate that objects have the expected properties
+                    if (Array.isArray(scores) && scores.every(s => typeof s === 'object' && s !== null && typeof s.name === 'string' && s.name.trim() !== '' && typeof s.score === 'number')) {
+                        return scores.sort((a, b) => b.score - a.score).slice(0, 5);
+                    }
+                } catch (e) {
+                    console.error("Error parsing scores from localStorage:", e);
+                    // Return fake scores if there's a parsing error or invalid data
+                    return [...fakeFutureScores];
+                }
+            }
+            // If nothing in localStorage or invalid, return fake scores
+            return [...fakeFutureScores];
+        }
+
+        function saveScore(playerName, score) {
+            try {
+                const scores = getTopScores();
+                // Ensure name is not an empty string or just spaces
+                const trimmedPlayerName = playerName.trim();
+                if (trimmedPlayerName === '') {
+                    console.warn("Cannot save score with empty player name.");
+                    return;
+                }
+                scores.push({ name: trimmedPlayerName, score: score });
+                const updatedScores = scores.sort((a, b) => b.score - a.score).slice(0, 5);
+                localStorage.setItem(TOP_SCORES_STORAGE_KEY, JSON.stringify(updatedScores));
+            } catch (e) {
+                console.error("Error saving score to localStorage:", e);
+            }
+        }
+
+        function loadAndDisplayTopScores() {
+            const scores = getTopScores();
+            // Remove all existing score items, except the header
+            const existingScoreItems = top7ListContainer.querySelectorAll('.score-item');
+            existingScoreItems.forEach(item => item.remove());
+
+            scores.forEach((score, index) => {
+                const scoreItem = document.createElement('div');
+                scoreItem.classList.add('score-item');
+                scoreItem.innerHTML = `
+                    <span class="score-rank">${index + 1}</span>
+                    <span class="score-name">${score.name}</span>
+                    <span class="score-points">${score.score}</span>
+                `;
+                top7ListContainer.appendChild(scoreItem);
+            });
+        }
+
+        // --- UTILITY TO SHUFFLE ARRAYS ---
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // --- LEVEL MAP LOGIC ---
+        function initializeLevelMap() {
+            levelMapContainer.innerHTML = ''; // Clear any previous elements
+
+            // Create level nodes
+            for (let i = 1; i <= totalLevels; i++) {
+                const node = document.createElement('div');
+                node.classList.add('level-node');
+                node.textContent = i;
+                node.dataset.level = i;
+                levelMapContainer.appendChild(node);
+
+                // Add lines between nodes (except after the last one)
+                if (i < totalLevels) {
+                    const line = document.createElement('div');
+                    line.classList.add('level-line');
+                    levelMapContainer.appendChild(line);
+                }
+            }
+            updateLevelMap(); // Update the initial state of the map
+        }
+
+        function updateLevelMap() {
+            const nodes = levelMapContainer.querySelectorAll('.level-node');
+            const lines = levelMapContainer.querySelectorAll('.level-line');
+
+            nodes.forEach((node, index) => {
+                const level = parseInt(node.dataset.level);
+
+                // Remove all state classes before applying new ones
+                node.classList.remove('completed', 'active-level');
+
+                if (level < currentLevel) {
+                    node.classList.add('completed');
+                } else if (level === currentLevel) {
+                    node.classList.add('active-level');
+                }
+            });
+
+            lines.forEach((line, index) => {
+                line.classList.remove('completed-line');
+                // A line is considered completed if the level it leads to has already been passed
+                // i.e., if the next level (index + 2) is less than or equal to the current level
+                if ((index + 2) <= currentLevel) {
+                    line.classList.add('completed-line');
+                }
+            });
+
+            // Adjust the position and width of the lines (this may require dynamic recalculation)
+            // It's assumed that the nodes are in a flexbox with justify-content: space-around
+            // For precise alignment, absolute coordinates or a more complex grid system could be used.
+            // For simplicity, with space-around and margins, the line's position is calculated between the nodes.
+            // For a visually perfect implementation of lines connecting the center of the nodes:
+            // Dynamically calculate the left and width of each line
+            requestAnimationFrame(() => { // Use requestAnimationFrame to ensure nodes are rendered
+                const nodes = levelMapContainer.querySelectorAll('.level-node');
+                lines.forEach((line, index) => {
+                    if (nodes[index] && nodes[index + 1]) {
+                        const node1Rect = nodes[index].getBoundingClientRect();
+                        const node2Rect = nodes[index + 1].getBoundingClientRect();
+                        const mapRect = levelMapContainer.getBoundingClientRect();
+
+                        const center1X = node1Rect.left + node1Rect.width / 2 - mapRect.left;
+                        const center2X = node2Rect.left + node2Rect.width / 2 - mapRect.left;
+
+                        line.style.left = `${center1X}px`;
+                        line.style.width = `${center2X - center1X}px`;
+                        line.style.top = `50%`; // Vertically center relative to nodes
+                        line.style.transform = `translateY(-50%)`;
+                    }
+                });
+            });
+        }
+
+        // --- QUESTION PROGRESS NODES LOGIC (NEW) ---
+        function updateQuestionProgressNodes() {
+            const levelQuestions = questionsBank[`level${currentLevel}`];
+            if (!levelQuestions) return; // Should not happen if levels are handled correctly
+
+            questionProgressContainer.innerHTML = ''; // Clear previous nodes
+
+            for (let i = 0; i < levelQuestions.length; i++) {
+                const node = document.createElement('div');
+                node.classList.add('progress-node');
+                if (i < currentQuestionIndex) {
+                    node.classList.add('completed-q');
+                } else if (i === currentQuestionIndex) {
+                    node.classList.add('current-q');
+                }
+                questionProgressContainer.appendChild(node);
+            }
+        }
+
+
+        // --- MAIN GAME LOGIC ---
+        function startGame() {
+            currentScore = 0;
+            currentEnergy = initialEnergy; // Reset energy
+            currentLevel = 1;
+            currentQuestionIndex = 0;
+            updateHud(gameScoreDisplay, currentScore);
+            updateEnergyBar(currentEnergy); // Use new function for bar
+            gameLevelDisplay.textContent = currentLevel; // Update level number
+
+            // Shuffle all questions once at the start of the game
+            for (const levelKey in questionsBank) {
+                if (questionsBank.hasOwnProperty(levelKey)) {
+                    shuffleArray(questionsBank[levelKey]);
+                }
+            }
+
+            initializeLevelMap(); // Initialize and update level map
+            loadQuestion();
+            showView(gameView);
+        }
+
+        function loadQuestion() {
+            // Animation: Fade out current content
+            questionTextElement.classList.add('fade-out');
+            optionsContainer.classList.add('fade-out');
+
+            setTimeout(() => {
+                const levelQuestions = questionsBank[`level${currentLevel}`];
+                if (!levelQuestions || levelQuestions.length === 0) {
+                    console.warn(`No questions for level ${currentLevel}. Ending game.`);
+                    endGame();
+                    return;
+                }
+
+                // questionCounterDisplay.textContent = `${currentQuestionIndex + 1}/${levelQuestions.length}`; // Comentado
+                updateQuestionProgressNodes(); // NUEVO: Actualizar nodos de progreso de preguntas
+
+                const currentQuestion = levelQuestions[currentQuestionIndex];
+                questionTextElement.innerHTML = currentQuestion.questionText;
+
+                optionsContainer.innerHTML = '';
+
+                // Get options and SHUFFLE THEM
+                const shuffledOptions = shuffleArray([...currentQuestion.options]);
+
+                shuffledOptions.forEach(optionText => {
+                    const button = document.createElement('button');
+                    button.classList.add('answer-button');
+                    button.innerHTML = optionText;
+                    button.addEventListener('click', () => checkAnswer(optionText, currentQuestion.correctAnswer, button));
+                    optionsContainer.appendChild(button);
+                });
+
+                // Animation: Fade in content
+                questionTextElement.classList.remove('fade-out');
+                optionsContainer.classList.remove('fade-out');
+            }, 300); // Duration of fade-out transition
+        }
+
+        function checkAnswer(selectedAnswer, correctAnswer, buttonElement) {
+            document.querySelectorAll('.answer-button').forEach(btn => {
+                btn.style.pointerEvents = 'none'; // Disable buttons
+            });
+
+            if (selectedAnswer === correctAnswer) {
+                currentScore += 100;
+                updateHud(gameScoreDisplay, currentScore); // Highlight score
+                buttonElement.classList.add('correct');
+                showFeedback('¡Correcto! ✅', true, 'correct-feedback'); // Feedback type for correct
+            } else {
+                currentEnergy--;
+                updateEnergyBar(currentEnergy); // Update energy bar
+                buttonElement.classList.add('incorrect');
+
+                const allButtons = optionsContainer.querySelectorAll('.answer-button');
+                allButtons.forEach(btn => {
+                    if (btn.innerHTML === correctAnswer) {
+                        btn.classList.add('correct');
+                    }
+                });
+                // Get hint for current question for feedback
+                const currentQuestion = questionsBank[`level${currentLevel}`][currentQuestionIndex];
+                const hint = currentQuestion ? currentQuestion.hint : '';
+                showFeedback(`¡Incorrecto! ❌`, false, 'incorrect-feedback', hint); // Pass hint to feedback
+                if (currentEnergy <= 0) {
+                    setTimeout(endGame, 1500);
+                    return;
+                }
+            }
+
+            setTimeout(() => {
+                hideFeedback();
+                currentQuestionIndex++;
+                const levelQuestions = questionsBank[`level${currentLevel}`];
+
+                if (currentQuestionIndex >= levelQuestions.length) {
+                    if (currentLevel < totalLevels) {
+                        currentLevel++;
+                        currentQuestionIndex = 0;
+                        updateHud(gameLevelDisplay, currentLevel); // Highlight level
+                        updateLevelMap(); // Update level map
+                        showFeedback(`¡Nivel ${currentLevel - 1} Completado! 🎉\nAccediendo a Nivel ${currentLevel}... 🚀`, true, 'level-up');
+                        setTimeout(() => {
+                            hideFeedback();
+                            loadQuestion();
+                            document.querySelectorAll('.answer-button').forEach(btn => {
+                                btn.style.pointerEvents = 'auto'; // Enable buttons
+                            });
+                        }, 2500); // Wait longer for level complete message
+                    } else {
+                        endGame(); // Game completed
+                    }
+                } else {
+                    loadQuestion(); // Load next question with animation
+                    document.querySelectorAll('.answer-button').forEach(btn => {
+                        btn.style.pointerEvents = 'auto'; // Enable buttons
+                    });
+                }
+            }, 1500);
+        }
+
+        // Function to update HUD with animation
+        function updateHud(element, value) {
+            element.textContent = value;
+            element.classList.remove('highlight');
+            void element.offsetWidth; // Force reflow to restart animation
+            element.classList.add('highlight');
+        }
+
+        // New function to update energy bar
+        function updateEnergyBar(energy) {
+            const percentage = (energy / initialEnergy) * 100;
+            gameEnergyBar.style.width = `${percentage}%`;
+
+            gameEnergyBar.classList.remove('low', 'medium'); // Reset classes
+
+            if (energy <= 1) {
+                gameEnergyBar.classList.add('low');
+            } else if (energy > 1 && energy <= Math.ceil(initialEnergy / 2)) {
+                gameEnergyBar.classList.add('medium');
+            }
+        }
+
+
+        // Modified to accept a hint parameter
+        function showFeedback(message, isCorrect, type = 'answer-feedback', hint = '') {
+            let displayMessage = message;
+            // If the answer was incorrect AND a hint was provided
+            if (!isCorrect && hint) {
+                displayMessage += `\n💡 Pista: ${hint}`; // Add hint with an emoji
+            }
+
+            feedbackMessage.textContent = displayMessage;
+
+            // Clear all feedback type classes before adding the correct one
+            feedbackMessage.classList.remove('correct-feedback', 'incorrect-feedback', 'level-up');
+
+            if (type === 'correct-feedback') {
+                feedbackMessage.classList.add('correct-feedback');
+            } else if (type === 'incorrect-feedback') {
+                feedbackMessage.classList.add('incorrect-feedback');
+            } else if (type === 'level-up') {
+                feedbackMessage.classList.add('level-up');
+            }
+            feedbackMessage.classList.add('show');
+        }
+
+        function hideFeedback() {
+            feedbackMessage.classList.remove('show');
+            // No need to remove feedback type classes here, they are cleared when shown again
+        }
+
+        function endGame() {
+            saveScore(currentPlayerName, currentScore);
+            finalMessageElement.textContent = `¡Excelente trabajo, BitKid ${currentPlayerName}!`;
+            finalScoreElement.textContent = currentScore;
+            showView(finalView);
+        }
+
+        function restartGame() {
+            currentPlayerName = '';
+            playerNameInput.value = '';
+            currentScore = 0;
+            currentEnergy = initialEnergy; // Reset energy
+            currentLevel = 1;
+            currentQuestionIndex = 0;
+            isShiftActive = true;
+            updateEnergyBar(currentEnergy); // Ensure energy bar is also reset
+            showView(welcomeView);
+        }
+
+        // --- EVENT HANDLERS ---
+        startButton.addEventListener('click', () => {
+            requestFullScreenAndZoom();
+            showView(playerNameView);
+        });
+
+        confirmNameButton.addEventListener('click', () => {
+            if (playerNameInput.value.trim() === '') {
+                alert('¡Por favor, ingresa tu Identificador de Usuario, BitKid!');
+                return;
+            }
+            currentPlayerName = playerNameInput.value.trim().replace(/\s+/g, ' ');
+            showView(rulesView);
+        });
+
+        startSimulationButton.addEventListener('click', startGame);
+
+        playAgainButton.addEventListener('click', restartGame);
+
+        viewTop7Button.addEventListener('click', () => {
+            showView(top7View);
+        });
+
+        top7NewSessionButton.addEventListener('click', restartGame);
+
+        top7MainMenuButton.addEventListener('click', () => {
+            restartGame();
+            showView(welcomeView);
+        });
+
+        viewTop7FromWelcomeButton.addEventListener('click', () => {
+            showView(top7View);
+        });
+
+        // Event listener for the new close window button
+        closeWindowButton.addEventListener('click', () => {
+            window.close(); // Attempts to close the window/tab
+        });
+
+
+        // --- INITIALIZATION ON PAGE LOAD ---
+        window.onload = () => {
+            console.log("WINDOW.ONLOAD: DOM is fully loaded. Initializing.");
+            showView(preloadView); // Ensure preload view is shown first
+            simulateLoading();
+
+            window.addEventListener('resize', () => {
+                if (playerNameView.classList.contains('active')) {
+                    generateVirtualKeyboard();
+                }
+                if (top7View.classList.contains('active')) {
+                    loadAndDisplayTopScores();
+                }
+                if (gameView.classList.contains('active')) { // Re-update map and question nodes if game view is active
+                    updateLevelMap();
+                    updateQuestionProgressNodes(); // Ensure question nodes also redraw on resize
+                }
+            });
+
+            document.addEventListener('contextmenu', event => event.preventDefault());
+
+            if (playerNameView.classList.contains('active')) {
+                generateVirtualKeyboard();
+            }
+        };
+
+    </script>
+</body>
+</html>
